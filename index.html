@@ -16,6 +16,8 @@
             --yellow-border: #f59e0b;
             --green-bg: #d1fae5;
             --green-border: #10b981;
+            --purple-bg: #f3e8ff;
+            --purple-border: #a855f7;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -93,7 +95,6 @@
             min-width: 45px;
             text-align: right;
         }
-        /* 상세 페이지 스타일 */
         .page-view {
             display: none;
         }
@@ -133,11 +134,31 @@
             padding: 12px;
             margin: 10px 0;
         }
-        .box-green p {
-            margin: 0;
-            font-size: 13px;
+        .box-green-title {
+            font-size: 12px;
+            font-weight: 700;
             color: #065f46;
+            margin-bottom: 6px;
+        }
+        .box-purple {
+            background-color: var(--purple-bg);
+            border: 1px solid var(--purple-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #6b21a8;
             font-weight: 600;
+        }
+        .notice-box {
+            background-color: #f1f5f9;
+            border-left: 3px solid #94a3b8;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #475569;
+            margin: 12px 0;
+            line-height: 1.5;
+            border-radius: 0 6px 6px 0;
         }
         .event-card {
             background: var(--card-bg);
@@ -170,16 +191,19 @@
         }
         .checkbox-label {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 8px;
             margin: 6px 0;
             cursor: pointer;
             font-size: 13px;
+            line-height: 1.4;
         }
         .checkbox-label input {
             width: 16px;
             height: 16px;
+            margin-top: 2px;
             accent-color: var(--accent-color);
+            flex-shrink: 0;
         }
         .code-box {
             background: #1e293b;
@@ -192,15 +216,18 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 8px;
+            gap: 8px;
         }
         .copy-btn {
             background: #3b82f6;
             color: white;
             border: none;
-            padding: 4px 8px;
+            padding: 5px 10px;
             border-radius: 4px;
             font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -233,9 +260,11 @@
         <button class="back-btn" onclick="goHome()">〈 부스 목록으로 돌아가기</button>
         <h1 id="booth-title" style="margin-bottom: 12px;"></h1>
         <div style="font-size: 13px; color: var(--text-sub); margin-bottom: 8px;">진행률 <span id="booth-pct">0.00%</span></div>
-        <div class="progress-bar-bg" style="margin-bottom: 20px;">
+        <div class="progress-bar-bg" style="margin-bottom: 16px;">
             <div id="booth-progress-fill" class="progress-bar-fill"></div>
         </div>
+
+        <div id="booth-notice-container"></div>
 
         <div class="box-yellow">
             <h3>☆ 특전 구성 (수령 체크)</h3>
@@ -248,15 +277,18 @@
 </div>
 
 <script>
-// 데이터 구조 정의
 const booths = [
     {
         id: "lezhin",
         name: "레진: LEZHINERY",
+        notice: "*RECEIPT FLEX(영수증 챌린지) 프로그램은 체험 소요 시간 및 현장 대기 상황에 따라 참여 인원이 제한될 수 있으며, 대기 인원이 많을 경우 해당 세션의 모든 관람객이 참여하지 못할 수 있습니다.",
         perks: [
-            "클리어파일", "파우치", "20코인 쿠폰", 
-            "작품 타이틀 스티커 (택 10종)", "레지너리 엽서 (24종 중 랜덤 1종)", 
-            "레지너리 축전 엽서 1 (23종 중 랜덤)", "레지너리 축전 엽서 2 (23종 중 랜덤)"
+            "클리어파일",
+            "파우치",
+            "20코인",
+            "작품 타이틀 스티커 택 10종",
+            "레지너리 엽서 24종 중 랜덤 1종",
+            "레지너리 축전 엽서 23종 중 최대 랜덤 2종"
         ],
         events: [
             {
@@ -264,58 +296,262 @@ const booths = [
                 title: "What's in my Basket?",
                 completed: false,
                 content: "1) 각 코너에서 취향에 맞는 작품 QR코드 스캔<br>2) 선택한 작품을 담아 나만의 바스켓 완성<br>3) 완성된 바스켓을 실시간으로 공유<br>4) 다른 관람객의 바스켓을 구경하고 좋아요 참여",
-                reward: "리워드: 취향 작품 엽서(BL/HL 선택 후 랜덤 1종), 레진 코인 20개 쿠폰",
-                perkIndices: [2, 3, 4] // 연동될 특전 인덱스
+                rewards: ["취향 작품 엽서(BL/HL 선택 후 랜덤 1종)", "레진 코인 20개 쿠폰"],
+                perkIndices: [2, 3, 4]
             },
             {
                 id: "lezhin_2",
                 title: "Receipt Flex",
                 completed: false,
-                content: "1) RECEIPT FLEX 체험존 방문<br>2) 안내에 따라 키오스크를 통해 나의 구매 내역 영수증 출력<br>3) 출력된 영수증을 촬영해 필수 해시태그와 함께 SNS 업로드",
-                reward: "리워드: SNS 인증 시 추첨을 통해 레진 코인 쿠폰",
+                content: "1) RECEIPT FLEX 체험존 방문<br>2) 안내에 따라 키오스크를 통해 나의 구매 내역 영수증 출력<br>3) 출력된 영수증을 촬영해 필수 해시태그와 함께 SNS 업로드<br>4) 인증 완료 후 추첨 이벤트 참여",
+                raffle: "@경품: 이벤트 참가 시, SNS 인증하면 추첨을 통해 레진 코인 쿠폰",
                 hashtag: "#2026위페스타 #레진코믹스 #LEZHINERY",
-                perkIndices: [2]
+                perkIndices: []
             },
             {
                 id: "lezhin_3",
                 title: "SNS 방문 인증",
                 completed: false,
                 content: "1) LEZHINERY 방문 및 자유롭게 사진 촬영<br>2) 촬영한 사진을 필수 해시태그와 함께 SNS 업로드<br>3) 리워드존에서 스태프에게 업로드 게시글 인증",
-                reward: "리워드: 레진 축전 엽서 (BL/HL 장르 선택 후 1개 랜덤)",
+                rewards: ["레진 축전 엽서 (BL/HL 장르 선택 후 1개 랜덤)"],
                 hashtag: "#2026위페스타 #레진코믹스 #LEZHINERY",
-                perkIndices: [5, 6]
+                perkIndices: [5]
             }
         ]
     },
     {
         id: "bomtoon",
         name: "봄툰: BOMTOWN",
-        perks: ["클리어 파일", "스티커 컬렉션", "스탬프판", "마을 주민증", "20코인 쿠폰", "축전 엽서 1", "축전 엽서 2"],
+        perks: [
+            "클리어 파일",
+            "스티커 컬렉션",
+            "스탬프판",
+            "마을 주민증",
+            "20코인 쿠폰",
+            "축전 엽서 19종 중 랜덤 2종"
+        ],
         events: [
-            { id: "bom_1", title: "부스 방문 선물", completed: false, content: "안내데스크 방문 시 지급", reward: "리워드: 클리어 파일, 스탬프판", perkIndices: [0, 2] },
-            { id: "bom_2", title: "SNS 방문 인증", completed: false, content: "필수 해시태그와 함께 인증", reward: "리워드: 축전 엽서 1", hashtag: "#BOMTOON_BOMTOWN #2026위페스타 #봄툰", perkIndices: [5] }
+            {
+                id: "bom_1",
+                title: "도둑을 찾아라!",
+                completed: false,
+                content: "1) 봄타운 입장 후 미션 참여<br>2) 마을 곳곳을 탐방하며 또보미 흔적 스탬프 찾기<br>3) 또보미 스탬프를 모아 몽타주 완성<br>4) 도둑 검거 미션 완료 후 리워드 수령",
+                rewards: ["봄타운 마을 주민증 1개", "봄타운 스티커북 1개", "봄툰 코인 20개 쿠폰"],
+                perkIndices: [1, 3, 4]
+            },
+            {
+                id: "bom_2",
+                title: "굿즈 포토존",
+                completed: false,
+                content: "1) 나만의 굿즈와 함께 봄타운 굿즈 포토존 방문<br>2) 포토존에서 굿즈 사진 촬영<br>3) 필수 해시태그와 함께 SNS 게시글 업로드<br>4) SNS 인증 후 추첨 이벤트 참여",
+                raffle: "@경품: 이벤트 참가 시, SNS 인증하면 추첨을 통해 봄툰 코인 20개 쿠폰",
+                hashtag: "#BOMTOON_BOMTOWN #2026위페스타 #봄툰",
+                perkIndices: []
+            },
+            {
+                id: "bom_3",
+                title: "SNS 방문 인증",
+                completed: false,
+                content: "1) 봄타운 방문 및 자유롭게 사진 촬영<br>2) 촬영한 사진을 필수 해시태그와 함께 SNS 업로드<br>3) 리워드존에서 스태프에게 업로드 게시글 인증",
+                rewards: ["봄툰 축전 엽서 1종(랜덤)"],
+                hashtag: "#BOMTOON_BOMTOWN #2026위페스타 #봄툰",
+                perkIndices: [5]
+            }
         ]
     },
     {
         id: "worldtour",
         name: "월드투어 라이브 2026",
-        perks: ["로고 스티커", "수화물 바코드 스티커"],
+        perks: [
+            "로고 스티커 3종 중 1종",
+            "수화물 바코드 스티커 7종 중 1종"
+        ],
         events: [
-            { id: "wt_1", title: "부스 방문 선물 (월드투어)", completed: false, content: "월드투어 부스 방문", reward: "리워드: 로고 스티커", perkIndices: [0] },
-            { id: "wt_2", title: "SNS 방문 인증 (월드투어)", completed: false, content: "해시태그 업로드", reward: "리워드: 수화물 바코드 스티커", hashtag: "#월드드랍 #월드투어라이브 #레진 #봄툰 #2026위페스타", perkIndices: [1] }
+            {
+                id: "wt_1",
+                title: "현장 응모 이벤트",
+                completed: false,
+                content: "- 추첨을 통해 총 10분께 '월드투어 라이브 관'에서 전시되었던 대형 비디오 콜 스탠드 2종 세트를 드립니다.<br><br><strong>참여 방법</strong><br>1) 현장에 배치된 '응모권'에 성함/이메일/받고 싶은 작품명 작성<br>2) 현장에 배치된 응모함에 투입",
+                raffle: "@경품: 작품별 대형 비디오 콜 아크릴 스탠드 (총 10명 추첨 / 1인 2개)",
+                perkIndices: []
+            },
+            {
+                id: "wt_2",
+                title: "부스 방문 선물",
+                completed: false,
+                content: "WORLD TOUR LIVE, WORLD DROP 로고 스티커 3종 중 랜덤 1종 증정",
+                rewards: ["로고 스티커 3종 중 랜덤 1종"],
+                perkIndices: [0]
+            },
+            {
+                id: "wt_3",
+                title: "SNS 방문 인증 이벤트",
+                completed: false,
+                content: "필수 해시태그와 함께 '월드투어 라이브 관' 방문을 인증하시면 수화물 바코드 스티커 7개 중 1장 증정",
+                rewards: ["수화물 바코드 스티커 7개 중 1장"],
+                hashtag: "#월드드랍 #월드투어라이브 #레진 #봄툰 #2026위페스타",
+                perkIndices: [1]
+            }
         ]
     },
-    { id: "bomsol", name: "봄소설", perks: ["명대사 포토카드 1개"], events: [{ id: "bs_1", title: "나만의 명대사 엽서", completed: false, content: "명대사 체험", reward: "리워드: 명대사 포토카드 1개", perkIndices: [0] }] },
-    { id: "teaz", name: "티즈", perks: ["대화방 투명 포토 엽서 1", "대화방 투명 포토 엽서 2", "티즈 스타 2,000개 쿠폰"], events: [{ id: "tz_1", title: "서비스 체험", completed: false, content: "앱 서비스 체험", reward: "리워드: 투명 포토 엽서 및 쿠폰", perkIndices: [0, 1, 2] }] },
-    { id: "snack", name: "레진스낵", perks: ["레진스낵 1일 구독권 쿠폰", "팝콘 스낵"], events: [{ id: "sn_1", title: "앱 다운 인증", completed: false, content: "앱 다운로드 인증", reward: "리워드: 구독권 및 팝콘", perkIndices: [0, 1] }] },
-    { id: "jaemi", name: "재이미샵 <재이미 팩토리>", perks: ["재이미 스티커", "WE 포토카드 1장"], events: [{ id: "jm_1", title: "굿즈 포토존", completed: false, content: "포토존 촬영 인증", reward: "리워드: 재이미 스티커", perkIndices: [0] }, { id: "jm_2", title: "방문 후기 이벤트", completed: false, content: "후기 작성", reward: "리워드: WE 포토카드 1장", hashtag: "#재이미팩토리 #2026위페스타 #재이미샵", perkIndices: [1] }] },
-    { id: "cafe", name: "카페 레봄 & WE 라이브러리", perks: ["멤버십 카드", "테이크아웃 컵", "코스터", "책갈피"], events: [{ id: "cf_1", title: "레봄", completed: false, content: "카페 방문", reward: "리워드: 멤버십 및 컵", perkIndices: [0, 1] }] },
-    { id: "room", name: "재이미룸 이벤트(앱)", perks: ["디지털 WE 포토카드", "WE 포토카드"], events: [{ id: "rm_1", title: "위페스타 퀴즈 이벤트", completed: false, content: "퀴즈 풀기", reward: "리워드: 포토카드 증정", perkIndices: [0, 1] }] }
+    {
+        id: "bomsol",
+        name: "봄소설",
+        perks: [
+            "명대사 포토카드 1개"
+        ],
+        events: [
+            {
+                id: "bs_1",
+                title: "나만의 명대사 엽서",
+                completed: false,
+                content: "1) 작가 전시를 관람하며 작품 속 명대사 감상<br>2) 키오스크에서 마음에 드는 명대사 선택<br>3) 나만의 명대사 포토카드 제작 및 출력",
+                rewards: ["명대사 포토카드 1개"],
+                perkIndices: [0]
+            }
+        ]
+    },
+    {
+        id: "teaz",
+        name: "티즈",
+        notice: "*이벤트 1, 2 중복 참여 가능. 각 이벤트 참여 시 동일한 특전 9종 중 1종 랜덤 증정",
+        perks: [
+            "대화방 투명 포토 엽서 2개",
+            "티즈 스타 2,000개 쿠폰"
+        ],
+        events: [
+            {
+                id: "tz_1",
+                title: "회원가입 인증",
+                completed: false,
+                content: "1) 티즈 부스 방문<br>2) 티즈 회원가입<br>3) 스태프에게 티즈 마이페이지 화면 제시(회원가입 인증)<br>4) 인증 완료 후 특전 수령",
+                rewards: ["티즈 스타 2000개 쿠폰", "대화방 투명 포토 엽서 1개"],
+                perkIndices: [0, 1]
+            },
+            {
+                id: "tz_2",
+                title: "서비스 체험",
+                completed: false,
+                content: "1) 티즈 서비스 체험존 방문<br>2) 현장에 비치된 태블릿으로 원하는 캐릭터 선택<br>3) 선택한 캐릭터와 대화하며 티즈 서비스 체험<br>4) 체험 완료 후 리워드 수령",
+                rewards: ["대화방 투명 포토 엽서 1개"],
+                perkIndices: [0]
+            }
+        ]
+    },
+    {
+        id: "snack",
+        name: "레진스낵",
+        perks: [
+            "레진스낵 1일 구독권 쿠폰",
+            "팝콘 스낵"
+        ],
+        events: [
+            {
+                id: "sn_1",
+                title: "앱 다운 인증",
+                completed: false,
+                content: "1) 레진스낵 부스 방문<br>2) 레진스낵 앱 다운로드 및 설치<br>3) 스태프에게 앱 다운로드 인증<br>4) 인증 완료 후 특전 수령",
+                rewards: ["레진스낵 1일 구독권 쿠폰", "팝콘 스낵"],
+                perkIndices: [0, 1]
+            }
+        ]
+    },
+    {
+        id: "jaemi",
+        name: "재이미샵 <재이미 팩토리>",
+        perks: [
+            "재이미 스티커 8종 중 1종",
+            "WE 포토카드 1장"
+        ],
+        events: [
+            {
+                id: "jm_1",
+                title: "부스 방문 선물",
+                completed: false,
+                content: "1) 방문만 해도 스티커 1종 증정",
+                rewards: ["재이미 스티커 8종 중 1종"],
+                perkIndices: [0]
+            },
+            {
+                id: "jm_2",
+                title: "대형 포토카드 포토존",
+                completed: false,
+                content: "1) 재이미 팩토리의 대형 포토카드 인증샷 SNS 공유",
+                rewards: ["WE 포토카드 1장"],
+                hashtag: "#재이미팩토리 #2026위페스타",
+                perkIndices: [1]
+            },
+            {
+                id: "jm_3",
+                title: "방문 후기 이벤트",
+                completed: false,
+                content: "방문 후기 SNS 업로드 추첨 이벤트",
+                raffle: "@경품: 방문 후기 SNS에 남기면 3명 추첨해 구매 특전 포토카드 35종 세트 증정",
+                hashtag: "#재이미팩토리 #2026위페스타 #재이미샵",
+                perkIndices: []
+            }
+        ]
+    },
+    {
+        id: "cafe",
+        name: "카페 레봄 & WE 라이브러리",
+        perks: [
+            "살롱 드 르봉 ver.2 멤버십 카드[8종 중 1종 랜덤]",
+            "테이크아웃 컵[8종 중 1종 랜덤] + 손그림 ver.B 코스터[8종 중 1종 랜덤]",
+            "명대사 책갈피 20종 중 1종 선택 제공"
+        ],
+        events: [
+            {
+                id: "cf_1",
+                title: "레봄",
+                completed: false,
+                content: "- 미네랄 워터 500ml + 손그림 ver.A 프린트 쿠키 3개(17종 중 3종 랜덤) : 8,500원",
+                rewards: [
+                    "특전: 테이크아웃 컵[8종 중 1종 랜덤] + 손그림 ver.B 코스터[8종 중 1종 랜덤]",
+                    "부스 방문 특전: 살롱 드 르봉 ver.2 멤버십 카드"
+                ],
+                perkIndices: [0, 1]
+            },
+            {
+                id: "cf_2",
+                title: "WE 라이브러리",
+                completed: false,
+                content: "1) 교환 독서 이벤트<br>&nbsp;&nbsp;&nbsp;테이블에 비치된 책에 자유롭게 메모 가능<br>2) WE LIBRARY 방문 특전",
+                rewards: ["명대사 책갈피 20종 중 1종 선택 제공"],
+                perkIndices: [2]
+            }
+        ]
+    },
+    {
+        id: "room",
+        name: "재이미룸 이벤트(앱)",
+        perks: [
+            "디지털 WE 포토카드(1회 5장 증정)",
+            "WE 포토카드(1장 or 3장)"
+        ],
+        events: [
+            {
+                id: "rm_1",
+                title: "위페스타 퀴즈 이벤트",
+                completed: false,
+                content: "'재이미룸' 앱 내 퀴즈 참여 시, 디지털 WE 포토카드 증정<br><br>*세션당 1회 참여 가능. 1일 최대 4회 참여 가능",
+                rewards: ["디지털 WE 포토카드(1회 5장 증정)"],
+                perkIndices: [0]
+            },
+            {
+                id: "rm_2",
+                title: "위페스타 스탬프 투어 이벤트",
+                completed: false,
+                content: "'재이미룸'에서 각 브랜드관 스탬프 모으면 WE 포토카드 획득 가능<br><br>* 1일 1회 참여 가능.<br>* 각 브랜드관 현장에서 안내되는 '특정 이미지'를 앱 내 '스캔'을 통해 인식하면 자동으로 수집.",
+                rewards: ["1장 랜덤 증정(4개 수집 시), 3장(9개 수집 시)"],
+                perkIndices: [1]
+            }
+        ]
+    }
 ];
 
-// LocalStorage 불러오기
 function loadData() {
-    const saved = localStorage.getItem("wefesta_data_v2");
+    const saved = localStorage.getItem("wefesta_data_final_v1");
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
@@ -325,6 +561,7 @@ function loadData() {
                     b.events.forEach((ev, ei) => {
                         if (parsed[bi].events[ei]) {
                             ev.completed = parsed[bi].events[ei].completed;
+                            ev.rewardsState = parsed[bi].events[ei].rewardsState || Array((ev.rewards || []).length).fill(false);
                         }
                     });
                 }
@@ -332,16 +569,27 @@ function loadData() {
         } catch(e) {}
     }
     booths.forEach(b => {
-        if (!b.perksState) b.perksState = Array(b.perks.length).fill(false);
+        if (!b.perksState || b.perksState.length !== b.perks.length) {
+            b.perksState = Array(b.perks.length).fill(false);
+        }
+        b.events.forEach(ev => {
+            const rLen = (ev.rewards || []).length;
+            if (!ev.rewardsState || ev.rewardsState.length !== rLen) {
+                ev.rewardsState = Array(rLen).fill(false);
+            }
+        });
     });
 }
 
 function saveData() {
     const dataToSave = booths.map(b => ({
         perksState: b.perksState,
-        events: b.events.map(ev => ({ completed: ev.completed }))
+        events: b.events.map(ev => ({
+            completed: ev.completed,
+            rewardsState: ev.rewardsState
+        }))
     }));
-    localStorage.setItem("wefesta_data_v2", JSON.stringify(dataToSave));
+    localStorage.setItem("wefesta_data_final_v1", JSON.stringify(dataToSave));
 }
 
 let currentBoothId = null;
@@ -354,17 +602,11 @@ function renderHome() {
     const allEventsContainer = document.getElementById("all-events-container");
     allEventsContainer.innerHTML = "";
 
-    let totalAllEvents = 0;
-    let completedAllEvents = 0;
-
     booths.forEach(booth => {
         const total = booth.events.length;
         const completed = booth.events.filter(e => e.completed).length;
-        totalAllEvents += total;
-        completedAllEvents += completed;
         const pct = total > 0 ? ((completed / total) * 100).toFixed(2) : "0.00";
 
-        // 메인 부스 카드
         const card = document.createElement("div");
         card.className = "booth-card";
         card.onclick = () => openBooth(booth.id);
@@ -379,14 +621,15 @@ function renderHome() {
         `;
         boothListContainer.appendChild(card);
 
-        // 하단 전체 이벤트 목록 (읽기 전용 링크 형태)
         booth.events.forEach(ev => {
             const evItem = document.createElement("div");
             evItem.className = "event-card";
             evItem.style.display = "flex";
-            evItem.style.justify0 = "space-between";
+            evItem.style.justifyContent = "space-between";
             evItem.style.alignItems = "center";
             evItem.style.padding = "10px 14px";
+            evItem.style.cursor = "pointer";
+            evItem.onclick = () => openBooth(booth.id);
             evItem.innerHTML = `
                 <span style="font-size:13px; font-weight:600;">📄 ${ev.title} <span style="font-size:11px; color:var(--text-sub);">(${booth.name})</span></span>
                 <input type="checkbox" ${ev.completed ? "checked" : ""} disabled style="width:16px; height:16px;">
@@ -424,7 +667,13 @@ function renderBoothDetails(booth) {
     document.getElementById("booth-pct").innerText = `${pct}%`;
     document.getElementById("booth-progress-fill").style.width = `${pct}%`;
 
-    // 특전 구성 렌더링
+    const noticeContainer = document.getElementById("booth-notice-container");
+    if (booth.notice) {
+        noticeContainer.innerHTML = `<div class="notice-box">${booth.notice}</div>`;
+    } else {
+        noticeContainer.innerHTML = "";
+    }
+
     const perksContainer = document.getElementById("booth-perks-container");
     perksContainer.innerHTML = "";
     booth.perks.forEach((perk, idx) => {
@@ -437,10 +686,30 @@ function renderBoothDetails(booth) {
         perksContainer.appendChild(label);
     });
 
-    // 이벤트 목록 렌더링
     const eventsContainer = document.getElementById("booth-events-container");
     eventsContainer.innerHTML = "";
     booth.events.forEach((ev, eIdx) => {
+        let rewardsHtml = "";
+        if (ev.rewards && ev.rewards.length > 0) {
+            const rewardChecks = ev.rewards.map((rText, rIdx) => `
+                <label class="checkbox-label" style="color:#065f46; font-weight:500;">
+                    <input type="checkbox" ${ev.rewardsState[rIdx] ? "checked" : ""} onchange="toggleEventReward('${booth.id}', ${eIdx}, ${rIdx}, this.checked)">
+                    <span>${rText}</span>
+                </label>
+            `).join("");
+            rewardsHtml = `
+                <div class="box-green">
+                    <div class="box-green-title">🟢 획득 리워드 (수령 체크)</div>
+                    ${rewardChecks}
+                </div>
+            `;
+        }
+
+        let raffleHtml = "";
+        if (ev.raffle) {
+            raffleHtml = `<div class="box-purple">🎁 ${ev.raffle}</div>`;
+        }
+
         const card = document.createElement("div");
         card.className = "event-card";
         card.innerHTML = `
@@ -456,9 +725,10 @@ function renderBoothDetails(booth) {
             </div>
             <div id="body-${ev.id}" class="event-body">
                 <div style="margin-bottom:8px;">${ev.content}</div>
-                <div class="box-green"><p>🟢 ${ev.reward}</p></div>
+                ${rewardsHtml}
+                ${raffleHtml}
                 ${ev.hashtag ? `
-                    <div style="font-size:12px; margin-top:6px; color:var(--text-sub);">해시태그 원터치 복사</div>
+                    <div style="font-size:12px; margin-top:8px; color:var(--text-sub);">해시태그 원터치 복사</div>
                     <div class="code-box">
                         <span id="tag-${ev.id}">${ev.hashtag}</span>
                         <button class="copy-btn" onclick="copyTag('${ev.hashtag}')">복사</button>
@@ -478,16 +748,36 @@ function toggleEventBody(evId) {
 function toggleEventComplete(boothId, evIdx, isChecked) {
     const booth = booths.find(b => b.id === boothId);
     if (!booth) return;
-    booth.events[evIdx].completed = isChecked;
-
-    // 연동된 특전도 함께 체크/해제
     const ev = booth.events[evIdx];
+    ev.completed = isChecked;
+
+    if (ev.rewardsState) {
+        ev.rewardsState = ev.rewardsState.map(() => isChecked);
+    }
+
     if (ev.perkIndices) {
         ev.perkIndices.forEach(pIdx => {
             if (pIdx < booth.perksState.length) {
                 booth.perksState[pIdx] = isChecked;
             }
         });
+    }
+
+    saveData();
+    renderBoothDetails(booth);
+}
+
+function toggleEventReward(boothId, evIdx, rIdx, isChecked) {
+    const booth = booths.find(b => b.id === boothId);
+    if (!booth) return;
+    const ev = booth.events[evIdx];
+    ev.rewardsState[rIdx] = isChecked;
+
+    if (ev.perkIndices && ev.perkIndices[rIdx] !== undefined) {
+        const pIdx = ev.perkIndices[rIdx];
+        if (pIdx < booth.perksState.length) {
+            booth.perksState[pIdx] = isChecked;
+        }
     }
 
     saveData();
@@ -507,7 +797,6 @@ function copyTag(text) {
     });
 }
 
-// 초기 실행
 window.onload = renderHome;
 </script>
 
